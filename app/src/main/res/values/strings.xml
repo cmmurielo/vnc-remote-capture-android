@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">VNC Remote Capture</string>
+
+    <string name="title_config">Configuración VNC</string>
+    <string name="label_host">Host / IP Remota</string>
+    <string name="label_port">Puerto VNC</string>
+    <string name="label_password">Contraseña VNC</string>
+    <string name="label_timeout">Timeout (segundos)</string>
+    <string name="btn_capture">Capturar Pantalla</string>
+    <string name="btn_save_gallery">Guardar en Galería</string>
+    <string name="btn_share">Compartir Captura</string>
+    <string name="msg_view_only_guarantee">Modo View Only estricto: sin interferencia de ratón o teclado remoto.</string>
+</resources>
