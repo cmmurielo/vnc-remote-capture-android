@@ -34,6 +34,8 @@ fun ZoomableImageView(
     var scale by remember { mutableFloatStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
 
+    val imageBitmap = remember(bitmap) { bitmap.asImageBitmap() }
+
     Box(
         modifier = modifier
             .background(Color.Black)
@@ -58,17 +60,17 @@ fun ZoomableImageView(
         contentAlignment = Alignment.Center
     ) {
         Image(
-            bitmap = bitmap.asImageBitmap(),
+            bitmap = imageBitmap,
             contentDescription = "Captura de pantalla remota",
             contentScale = ContentScale.Fit,
             modifier = Modifier
                 .fillMaxSize()
-                .graphicsLayer(
-                    scaleX = scale,
-                    scaleY = scale,
-                    translationX = offset.x,
+                .graphicsLayer {
+                    scaleX = scale
+                    scaleY = scale
+                    translationX = offset.x
                     translationY = offset.y
-                )
+                }
         )
     }
 }
