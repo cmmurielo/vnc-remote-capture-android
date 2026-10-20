@@ -5,6 +5,7 @@ import com.capturapantalla.vnc.core.Result
 import com.capturapantalla.vnc.core.VncConfig
 import com.capturapantalla.vnc.core.VncError
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
@@ -119,7 +120,7 @@ class VncClient {
 
             sendSetEncodings(outStream)
 
-            Thread.sleep(300)
+            delay(300)
 
             onProgress("Descargando captura de pantalla ($fbWidth x $fbHeight)...")
             val decoder = FramebufferDecoder(fbWidth, fbHeight)
@@ -137,7 +138,7 @@ class VncClient {
                 retries++
                 if (retries < maxRetries) {
                     onProgress("Fotograma en negro detectado, refrescando ($retries/$maxRetries)...")
-                    Thread.sleep(600)
+                    delay(600)
                 }
             }
 
