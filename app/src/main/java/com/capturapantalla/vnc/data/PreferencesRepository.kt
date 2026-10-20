@@ -34,7 +34,7 @@ class PreferencesRepository(context: Context) {
     }
 
     fun loadConfig(): VncConfig {
-        val host = prefs.getString(KEY_HOST, "100.105.103.8") ?: "100.105.103.8"
+        val host = prefs.getString(KEY_HOST, "") ?: ""
         val port = prefs.getInt(KEY_PORT, 5900)
         // Omitir contraseñas por defecto predeterminadas para evitar la exposición de credenciales
         val password = prefs.getString(KEY_PASSWORD, "") ?: ""

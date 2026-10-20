@@ -7,7 +7,7 @@ import android.net.Uri
  * Value Object inmutable para la configuración de conexión VNC.
  */
 data class VncConfig(
-    val host: String = "100.105.103.21",
+    val host: String = "",
     val port: Int = 5900,
     val password: String = "",
     val timeoutSeconds: Double = 15.0,
