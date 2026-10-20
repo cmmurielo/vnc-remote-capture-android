@@ -34,18 +34,19 @@ class PreferencesRepository(context: Context) {
     }
 
     fun loadConfig(): VncConfig {
-        val host = prefs.getString(KEY_HOST, "") ?: ""
-        val port = prefs.getInt(KEY_PORT, 5900)
+        val defaultConfig = VncConfig()
+        val host = prefs.getString(KEY_HOST, defaultConfig.host) ?: defaultConfig.host
+        val port = prefs.getInt(KEY_PORT, defaultConfig.port)
         // Omitir contraseñas por defecto predeterminadas para evitar la exposición de credenciales
-        val password = prefs.getString(KEY_PASSWORD, "") ?: ""
-        val timeout = prefs.getFloat(KEY_TIMEOUT, 15f).toDouble()
-        val formatName = prefs.getString(KEY_FORMAT, SaveFormat.JPEG.name) ?: SaveFormat.JPEG.name
-        val quality = prefs.getInt(KEY_QUALITY, 85)
+        val password = prefs.getString(KEY_PASSWORD, defaultConfig.password) ?: defaultConfig.password
+        val timeout = prefs.getFloat(KEY_TIMEOUT, defaultConfig.timeoutSeconds.toFloat()).toDouble()
+        val formatName = prefs.getString(KEY_FORMAT, defaultConfig.saveFormat.name) ?: defaultConfig.saveFormat.name
+        val quality = prefs.getInt(KEY_QUALITY, defaultConfig.quality)
 
         val saveFormat = try {
             SaveFormat.valueOf(formatName)
         } catch (_: Exception) {
-            SaveFormat.JPEG
+            defaultConfig.saveFormat
         }
 
         return VncConfig(
