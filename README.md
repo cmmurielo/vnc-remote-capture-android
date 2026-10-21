@@ -23,6 +23,13 @@ Aplicación nativa de Android desarrollada en **Kotlin** y **Jetpack Compose** c
 * **Arquitectura Limpia y Patrones Modernos:**
   * Patrón **Railway Oriented Programming** con `Result<T, E>` y tipos sellados (`sealed interface VncError`).
   * Inyección de dependencias por constructor y arquitectura MVVM con `StateFlow`.
+* **Seguridad y Privacidad Integrada (Hardened):**
+  * **Protección Anti-Fuga Visual (`FLAG_SECURE`):** Bloquea la captura y almacenamiento en caché de miniaturas del escritorio remoto en la vista de aplicaciones recientes (*Task Switcher*).
+  * **Almacenamiento Cifrado y Respaldo Seguro:** Credenciales VNC protegidas con `EncryptedSharedPreferences` (AES-256 GCM) y prevención de extracción por USB/Cloud (`android:allowBackup="false"`).
+  * **Mitigación DoS & Parser RFB Seguro:** Validación estricta de límites de memoria y desbordamiento aritmético para prevenir caídas por agotamiento de heap (`OutOfMemoryError`).
+  * **Higiene de Almacenamiento:** Purga automática periódica de capturas temporales en caché y principio de mínimo privilegio en `FileProvider`.
+  * **Asesor de Red en Tiempo Real:** Detección y alerta visual en la UI ante intentos de conexión VNC sobre IPs públicas no protegidas por VPN.
+  * **Protección R8 / ProGuard:** Minificación de código, ofuscación y reducción de recursos activa en compilaciones `release`.
 
 ---
 
@@ -54,7 +61,8 @@ android/
 │           ├── core/
 │           │   ├── Result.kt          # Sealed interface Result<T, E>
 │           │   ├── VncConfig.kt       # Modelos inmutables de configuración
-│           │   └── VncError.kt        # Dominio algebraico de errores
+│           │   ├── VncError.kt        # Dominio algebraico de errores
+│           │   └── VncSecurityAdvisor.kt # Análisis y advertencia de red segura
 │           ├── rfb/
 │           │   ├── VncClient.kt       # Cliente socket RFB 3.8
 │           │   ├── VncAuth.kt         # Cifrado DES conforme a RFC 6143
