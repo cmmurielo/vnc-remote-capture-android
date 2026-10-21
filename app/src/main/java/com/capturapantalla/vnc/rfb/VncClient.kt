@@ -34,6 +34,12 @@ class VncClient {
             )
         }
 
+        if (config.port !in 1..65535) {
+            return@withContext Result.Failure(
+                VncError.InvalidConfiguration("El puerto ${config.port} está fuera del rango válido (1-65535).")
+            )
+        }
+
         var socket: Socket? = null
         val timeoutMillis = (config.timeoutSeconds * 1000).toInt()
 
@@ -60,6 +66,11 @@ class VncClient {
             val secCount = inStream.readUnsignedByte()
             if (secCount == 0) {
                 val reasonLen = inStream.readInt()
+                if (reasonLen !in 1..MAX_REASON_LENGTH) {
+                    return@withContext Result.Failure(
+                        VncError.ProtocolError("Negociación de seguridad", "Longitud de motivo de rechazo inválida: $reasonLen")
+                    )
+                }
                 val reasonBytes = ByteArray(reasonLen)
                 inStream.readFully(reasonBytes)
                 val reason = String(reasonBytes, StandardCharsets.UTF_8)
@@ -109,10 +120,27 @@ class VncClient {
             val fbWidth = inStream.readUnsignedShort()
             val fbHeight = inStream.readUnsignedShort()
 
+            if (fbWidth !in 1..MAX_FRAMEBUFFER_DIMENSION || fbHeight !in 1..MAX_FRAMEBUFFER_DIMENSION) {
+                return@withContext Result.Failure(
+                    VncError.ProtocolError(
+                        "Inicialización de pantalla",
+                        "Dimensiones de pantalla fuera de límites permitidos ($fbWidth x $fbHeight, máx: $MAX_FRAMEBUFFER_DIMENSION)"
+                    )
+                )
+            }
+
             val serverPixelFormat = ByteArray(16)
             inStream.readFully(serverPixelFormat)
 
             val nameLength = inStream.readInt()
+            if (nameLength !in 0..MAX_NAME_LENGTH) {
+                return@withContext Result.Failure(
+                    VncError.ProtocolError(
+                        "Inicialización de sesión",
+                        "Longitud de nombre de escritorio inválida: $nameLength"
+                    )
+                )
+            }
             val nameBytes = ByteArray(nameLength)
             inStream.readFully(nameBytes)
 
@@ -226,6 +254,9 @@ class VncClient {
 
         inStream.readByte()
         val numRectangles = inStream.readUnsignedShort()
+        if (numRectangles > MAX_RECTANGLES) {
+            throw IllegalStateException("Número excesivo de rectángulos en FramebufferUpdate: $numRectangles (máx: $MAX_RECTANGLES)")
+        }
 
         val buffer = ByteArray(65536)
 
@@ -237,7 +268,11 @@ class VncClient {
             val encodingType = inStream.readInt()
 
             if (encodingType == 0) {
-                val totalBytes = rw * rh * 4
+                val totalBytesLong = rw.toLong() * rh.toLong() * 4L
+                if (totalBytesLong < 0 || totalBytesLong > MAX_RECT_BYTES) {
+                    throw IllegalStateException("Tamaño de rectángulo desbordado o fuera de límites seguros ($rw x $rh = $totalBytesLong bytes)")
+                }
+                val totalBytes = totalBytesLong.toInt()
                 val rectData = if (totalBytes <= buffer.size) buffer else ByteArray(totalBytes)
                 inStream.readFully(rectData, 0, totalBytes)
                 decoder.decodeRawRect(rx, ry, rw, rh, rectData)
@@ -245,5 +280,13 @@ class VncClient {
                 throw IllegalStateException("Codificación no soportada recibida: $encodingType")
             }
         }
+    }
+
+    companion object {
+        const val MAX_REASON_LENGTH = 4096
+        const val MAX_NAME_LENGTH = 4096
+        const val MAX_FRAMEBUFFER_DIMENSION = 8192
+        const val MAX_RECTANGLES = 10000
+        const val MAX_RECT_BYTES = 64 * 1024 * 1024 // 64 MB
     }
 }
