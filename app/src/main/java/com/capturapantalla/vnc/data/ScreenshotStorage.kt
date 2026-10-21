@@ -27,7 +27,17 @@ data class SavedFileResult(
     val relativePath: String
 )
 
-class ScreenshotStorage(private val context: Context) {
+class ScreenshotStorage(
+    private val context: Context? = null,
+    private val cacheDirectoryProvider: () -> File = {
+        context?.cacheDir?.let { File(it, "capturas") } ?: File("build/tmp/capturas")
+    }
+) {
+
+    internal constructor(cacheDir: File) : this(
+        context = null,
+        cacheDirectoryProvider = { cacheDir }
+    )
 
     private val dateFormatter = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US)
 
@@ -54,8 +64,10 @@ class ScreenshotStorage(private val context: Context) {
             SaveFormat.PNG -> Bitmap.CompressFormat.PNG
         }
 
+        val ctx = context ?: return@withContext Result.Failure(VncError.StorageError("Contexto no disponible"))
+
         try {
-            val contentResolver = context.contentResolver
+            val contentResolver = ctx.contentResolver
             val contentValues = ContentValues().apply {
                 put(MediaStore.Images.Media.DISPLAY_NAME, filename)
                 put(MediaStore.Images.Media.MIME_TYPE, format.mimeType)
@@ -108,8 +120,9 @@ class ScreenshotStorage(private val context: Context) {
         quality: Int
     ): Result<Intent, VncError> = withContext(Dispatchers.IO) {
         try {
-            val cacheDir = File(context.cacheDir, "capturas")
+            val cacheDir = cacheDirectoryProvider()
             if (!cacheDir.exists()) cacheDir.mkdirs()
+            clearTempCache()
 
             val timestamp = dateFormatter.format(Date(image.timestampMillis))
             val tempFile = File(cacheDir, "compartir_$timestamp.${format.extension}")
@@ -125,9 +138,11 @@ class ScreenshotStorage(private val context: Context) {
                 out.flush()
             }
 
+            val ctx = context ?: return@withContext Result.Failure(VncError.StorageError("Contexto no disponible"))
+
             val contentUri = FileProvider.getUriForFile(
-                context,
-                "${context.packageName}.fileprovider",
+                ctx,
+                "${ctx.packageName}.fileprovider",
                 tempFile
             )
 
@@ -141,5 +156,28 @@ class ScreenshotStorage(private val context: Context) {
         } catch (e: Exception) {
             Result.Failure(VncError.StorageError("Error al preparar compartir: ${e.localizedMessage}"))
         }
+    }
+
+    /**
+     * Purga capturas temporales residuales en caché para evitar la acumulación
+     * de imágenes con información confidencial en el almacenamiento interno de la app.
+     */
+    fun clearTempCache(olderThanMillis: Long = CACHE_EXPIRATION_MILLIS): Int {
+        val cacheDir = cacheDirectoryProvider()
+        if (!cacheDir.exists()) return 0
+        val cutoff = System.currentTimeMillis() - olderThanMillis
+        var deletedCount = 0
+        cacheDir.listFiles()?.forEach { file ->
+            if (file.isFile && file.lastModified() < cutoff) {
+                if (file.delete()) {
+                    deletedCount++
+                }
+            }
+        }
+        return deletedCount
+    }
+
+    companion object {
+        const val CACHE_EXPIRATION_MILLIS = 30 * 60 * 1000L // 30 minutos
     }
 }

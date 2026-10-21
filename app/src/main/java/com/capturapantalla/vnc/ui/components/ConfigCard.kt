@@ -107,7 +107,7 @@ fun ConfigCard(
                     ) {
                         OutlinedTextField(
                             value = config.host,
-                            onValueChange = { onConfigChange(config.copy(host = it)) },
+                            onValueChange = { onConfigChange(config.copy(host = it.trim())) },
                             label = { Text("Host / IP Remota") },
                             leadingIcon = {
                                 Icon(Icons.Default.Router, contentDescription = null)
@@ -116,13 +116,16 @@ fun ConfigCard(
                             modifier = Modifier.weight(0.68f)
                         )
 
+                        val isPortInvalid = config.port !in 1..65535
                         OutlinedTextField(
-                            value = config.port.toString(),
-                            onValueChange = {
-                                val portInt = it.toIntOrNull() ?: config.port
+                            value = if (config.port == 0) "" else config.port.toString(),
+                            onValueChange = { input ->
+                                val digits = input.filter { it.isDigit() }.take(5)
+                                val portInt = digits.toIntOrNull() ?: 0
                                 onConfigChange(config.copy(port = portInt))
                             },
                             label = { Text("Puerto") },
+                            isError = isPortInvalid,
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             singleLine = true,
                             modifier = Modifier.weight(0.32f)
